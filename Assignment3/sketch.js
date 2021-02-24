@@ -204,6 +204,7 @@ function drawColorPoint(x, y, r, g, b) {
 }
 
 function doHouse() {
+  setup();
   var trn = new Matrix2D(1, 2, 3, 4);
 
   stroke(0, 0, 0);
