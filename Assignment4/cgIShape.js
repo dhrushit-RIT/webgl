@@ -27,6 +27,10 @@ class MyTriangle {
         this.triangles = [];
     }
 
+    toString() {
+        console.log(`A: ${this.A}\nB: ${this.B}\nC: ${this.C}`);
+    }
+
     generateTriangles() {
         if (this.subdivisions == 0) {
             return;
@@ -40,9 +44,9 @@ class MyTriangle {
 
         this.triangles.push(
             new MyTriangle([
-                this.A,
+                this.B,
                 pointM,
-                this.B
+                this.A
             ],
                 this.subdivisions - 1
             )
@@ -50,9 +54,9 @@ class MyTriangle {
 
         this.triangles.push(
             new MyTriangle([
-                this.B,
+                this.C,
                 pointM,
-                this.C
+                this.B,
             ],
                 this.subdivisions - 1
             )
@@ -69,8 +73,8 @@ class MyTriangle {
             return this.triangles[0].getTriangles()
                 .concat(this.triangles[1].getTriangles());
         }
-
     }
+
 }
 
 class MyQuad {
@@ -111,6 +115,19 @@ class MyQuad {
     getTriangles() {
         return this.triangles[0].getTriangles()
             .concat(this.triangles[1].getTriangles());
+    }
+
+
+    drawTriangles() {
+        if (this.triangles.length == 0) {
+            this.generateTriangles();
+        }
+
+        let triangles = this.getTriangles();
+        for (let triangle of triangles) {
+            // console.log(triangle);
+            addTriangle(triangle.A.x, triangle.A.y, triangle.A.z, triangle.B.x, triangle.B.y, triangle.B.z, triangle.C.x, triangle.C.y, triangle.C.z);
+        }
     }
 }
 
@@ -175,31 +192,62 @@ function makeCube(subdivisions) {
 function makeCylinder(radialdivision, heightdivision) {
     // fill in your code here.
 
-    radialdivision = 4;
-    let centerPoint = new Point(0, 0, 0);
-    let basePoints = [new Point(0.5, 0, 0.5)];
-    let baseTriangles = [];
+    let bottomCenterPoint = new Point(0, -0.5, 0);
+    let topCenterPoint = new Point(0, 0.5, 0);
+    let bottomPoints = [new Point(1, -0.5, 0)];
+    let topPoints = [new Point(1, 0.5, 0)];
+    let bottomTriangles = [];
+    let topTriangles = [];
     let dTheetaDeg = 360 / radialdivision
     let dTheeta = dTheetaDeg * (Math.PI / 180);
     let theeta = 0;
 
     for (let division = 0; division < radialdivision; division++) {
         theeta += dTheeta;
-        let point = new Point(Math.cos(theeta), 0, Math.sin(theeta));
-        basePoints.push(point);
-        console.log(theeta, point);
+
+        let basePoint = new Point(Math.cos(theeta), -0.5, Math.sin(theeta));
+        let topPoint = new Point(Math.cos(theeta), 0.5, Math.sin(theeta));
+
+        bottomPoints.push(basePoint);
+        topPoints.push(topPoint);
     }
 
     for (let division = 0; division < radialdivision; division++) {
-        let triangle = new MyTriangle([
-            centerPoint,
-            basePoints[(division)],
-            basePoints[(division + 1) % radialdivision]
+
+        // set up base triangles
+        let bottomTriangle = new MyTriangle([
+            bottomCenterPoint,
+            bottomPoints[(division + 1) % radialdivision],
+            bottomPoints[(division)]
         ],
             0
         );
-        baseTriangles.push(triangle);
-        addTriangle(triangle.A.x, triangle.A.y, triangle.A.z, triangle.B.x, triangle.B.y, triangle.B.z, triangle.C.x, triangle.C.y, triangle.C.z);
+        bottomTriangles.push(bottomTriangle);
+
+        // set up top triangles
+        let topTriangle = new MyTriangle([
+            topCenterPoint,
+            topPoints[(division)],
+            topPoints[(division + 1) % radialdivision]
+        ],
+            0
+        );
+        topTriangles.push(topTriangle);
+
+        addTriangle(bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z, bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z, bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z);
+        addTriangle(topTriangle.A.x, topTriangle.A.y, topTriangle.A.z, topTriangle.B.x, topTriangle.B.y, topTriangle.B.z, topTriangle.C.x, topTriangle.C.y, topTriangle.C.z);
+
+
+        // set up the sides on the curve
+        let side = new MyQuad([
+            topPoints[(division)],
+            bottomPoints[(division)],
+            bottomPoints[(division + 1) % radialdivision],
+            topPoints[(division + 1) % radialdivision]
+        ], heightdivision);
+
+        side.generateTriangles();
+        side.drawTriangles();
     }
 
 }
@@ -214,6 +262,47 @@ function makeCylinder(radialdivision, heightdivision) {
 //
 function makeCone(radialdivision, heightdivision) {
     // fill in your code here.
+
+    let topCenterPoint = new Point(0, 0.5, 0);
+
+    let bottomCenterPoint = new Point(0, -0.5, 0);
+    let bottomPoints = [new Point(1, -0.5, 0)];
+    let bottomTriangles = [];
+    let dTheetaDeg = 360 / radialdivision
+    let dTheeta = dTheetaDeg * (Math.PI / 180);
+    let theeta = 0;
+
+    for (let division = 0; division < radialdivision; division++) {
+        theeta += dTheeta;
+
+        let basePoint = new Point(Math.cos(theeta), -0.5, Math.sin(theeta));
+
+        bottomPoints.push(basePoint);
+    }
+
+    for (let division = 0; division < radialdivision; division++) {
+
+        // set up base triangles
+        let bottomTriangle = new MyTriangle([
+            bottomCenterPoint,
+            bottomPoints[(division + 1) % radialdivision],
+            bottomPoints[(division)]
+        ],
+            0
+        );
+        bottomTriangles.push(bottomTriangle);
+
+        let sideTriangle = new MyTriangle([
+            topCenterPoint,
+            bottomPoints[(division)],
+            bottomPoints[(division + 1) % radialdivision],
+        ],
+            0
+        );
+
+        addTriangle(bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z, bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z, bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z);
+        addTriangle(sideTriangle.A.x, sideTriangle.A.y, sideTriangle.A.z, sideTriangle.B.x, sideTriangle.B.y, sideTriangle.B.z, sideTriangle.C.x, sideTriangle.C.y, sideTriangle.C.z);
+    }
 }
 
 //
@@ -226,6 +315,46 @@ function makeCone(radialdivision, heightdivision) {
 //
 function makeSphere(slices, stacks) {
     // fill in your code here.
+
+    // x = r sinΘ cosΦ
+    // y = r sinΘ sinΦ
+    // z = r cosΘ
+
+    stacks = 10;
+    slices = 10;
+
+    let r = 1;
+    let dTheeta = Math.PI / stacks;
+    let dPhi = 2 * Math.PI / slices;
+
+    /* 
+     *  Surface is counter-clock-wise with respect to the normal. In this case, the Y axis is that normal.
+     *  With -ve Y axis, the direction of rotation will reverse.
+    */
+
+    for (let phi = 0; phi < Math.PI; phi += dPhi) { // stack level
+        for (let theeta = 0; theeta < Math.PI; theeta += dTheeta) { // in each stack
+            let C = new Point(r * Math.sin(theeta) * Math.cos(phi), r * Math.sin(theeta) * Math.sin(phi), r * Math.cos(theeta));
+            let D = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi), r * Math.sin(theeta + dTheeta) * Math.sin(phi), r * Math.cos(theeta + dTheeta));
+            let A = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi + dPhi), r * Math.sin(theeta + dTheeta) * Math.sin(phi + dPhi), r * Math.cos(theeta + dTheeta));
+            let B = new Point(r * Math.sin(theeta) * Math.cos(phi + dPhi), r * Math.sin(theeta) * Math.sin(phi + dPhi), r * Math.cos(theeta));
+            let side = new MyQuad([A, D, C, B]);
+
+            side.generateTriangles();
+            side.drawTriangles();
+        }
+
+        for (let theeta = Math.PI; theeta < 2 * Math.PI; theeta += dTheeta) {
+            let C = new Point(r * Math.sin(theeta) * Math.cos(phi), r * Math.sin(theeta) * Math.sin(phi), r * Math.cos(theeta));
+            let D = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi), r * Math.sin(theeta + dTheeta) * Math.sin(phi), r * Math.cos(theeta + dTheeta));
+            let A = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi + dPhi), r * Math.sin(theeta + dTheeta) * Math.sin(phi + dPhi), r * Math.cos(theeta + dTheeta));
+            let B = new Point(r * Math.sin(theeta) * Math.cos(phi + dPhi), r * Math.sin(theeta) * Math.sin(phi + dPhi), r * Math.cos(theeta));
+            let side = new MyQuad([A, B, C, D]);
+
+            side.generateTriangles();
+            side.drawTriangles();
+        }
+    }
 }
 
 
