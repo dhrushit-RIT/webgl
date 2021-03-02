@@ -192,10 +192,12 @@ function makeCube(subdivisions) {
 function makeCylinder(radialdivision, heightdivision) {
     // fill in your code here.
 
+    let bottomRadius = 0.5;
+    let topRadius = 0.5;
     let bottomCenterPoint = new Point(0, -0.5, 0);
     let topCenterPoint = new Point(0, 0.5, 0);
-    let bottomPoints = [new Point(1, -0.5, 0)];
-    let topPoints = [new Point(1, 0.5, 0)];
+    let bottomPoints = [new Point(bottomRadius, -0.5, 0)];
+    let topPoints = [new Point(topRadius, 0.5, 0)];
     let bottomTriangles = [];
     let topTriangles = [];
     let dTheetaDeg = 360 / radialdivision
@@ -205,8 +207,8 @@ function makeCylinder(radialdivision, heightdivision) {
     for (let division = 0; division < radialdivision; division++) {
         theeta += dTheeta;
 
-        let basePoint = new Point(Math.cos(theeta), -0.5, Math.sin(theeta));
-        let topPoint = new Point(Math.cos(theeta), 0.5, Math.sin(theeta));
+        let basePoint = new Point(bottomRadius * Math.cos(theeta), -0.5, bottomRadius * Math.sin(theeta));
+        let topPoint = new Point(topRadius * Math.cos(theeta), 0.5, topRadius * Math.sin(theeta));
 
         bottomPoints.push(basePoint);
         topPoints.push(topPoint);
@@ -265,8 +267,9 @@ function makeCone(radialdivision, heightdivision) {
 
     let topCenterPoint = new Point(0, 0.5, 0);
 
+    let bottomRadius = 0.5;
     let bottomCenterPoint = new Point(0, -0.5, 0);
-    let bottomPoints = [new Point(1, -0.5, 0)];
+    let bottomPoints = [new Point(bottomRadius, -0.5, 0)];
     let bottomTriangles = [];
     let dTheetaDeg = 360 / radialdivision
     let dTheeta = dTheetaDeg * (Math.PI / 180);
@@ -275,7 +278,7 @@ function makeCone(radialdivision, heightdivision) {
     for (let division = 0; division < radialdivision; division++) {
         theeta += dTheeta;
 
-        let basePoint = new Point(Math.cos(theeta), -0.5, Math.sin(theeta));
+        let basePoint = new Point(bottomRadius * Math.cos(theeta), -0.5, bottomRadius * Math.sin(theeta));
 
         bottomPoints.push(basePoint);
     }
@@ -320,10 +323,10 @@ function makeSphere(slices, stacks) {
     // y = r sinΘ sinΦ
     // z = r cosΘ
 
-    stacks = 10;
-    slices = 10;
+    stacks = Math.max(3, stacks);
+    slices = Math.max(4, slices);
 
-    let r = 1;
+    let r = 0.5;
     let dTheeta = Math.PI / stacks;
     let dPhi = 2 * Math.PI / slices;
 
