@@ -75,6 +75,18 @@ class MyTriangle {
         }
     }
 
+    drawTriangles() {
+        if (this.triangles.length == 0) {
+            this.generateTriangles();
+        }
+
+        let triangles = this.getTriangles();
+        for (let triangle of triangles) {
+            // console.log(triangle);
+            addTriangle(triangle.A.x, triangle.A.y, triangle.A.z, triangle.B.x, triangle.B.y, triangle.B.z, triangle.C.x, triangle.C.y, triangle.C.z);
+        }
+    }
+
 }
 
 class MyQuad {
@@ -192,6 +204,9 @@ function makeCube(subdivisions) {
 function makeCylinder(radialdivision, heightdivision) {
     // fill in your code here.
 
+    radialdivision = Math.max(radialdivision, 3);
+    heightdivision = Math.max(heightdivision, 1);
+
     let bottomRadius = 0.5;
     let topRadius = 0.5;
     let bottomCenterPoint = new Point(0, -0.5, 0);
@@ -265,6 +280,9 @@ function makeCylinder(radialdivision, heightdivision) {
 function makeCone(radialdivision, heightdivision) {
     // fill in your code here.
 
+    radialdivision = Math.max(radialdivision, 3);
+    heightdivision = Math.max(heightdivision, 1);
+
     let topCenterPoint = new Point(0, 0.5, 0);
 
     let bottomRadius = 0.5;
@@ -300,11 +318,14 @@ function makeCone(radialdivision, heightdivision) {
             bottomPoints[(division)],
             bottomPoints[(division + 1) % radialdivision],
         ],
-            0
+            heightdivision - 1
         );
 
+        // sideTriangle.generateTriangles();
+        sideTriangle.drawTriangles();
+
         addTriangle(bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z, bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z, bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z);
-        addTriangle(sideTriangle.A.x, sideTriangle.A.y, sideTriangle.A.z, sideTriangle.B.x, sideTriangle.B.y, sideTriangle.B.z, sideTriangle.C.x, sideTriangle.C.y, sideTriangle.C.z);
+        // addTriangle(sideTriangle.A.x, sideTriangle.A.y, sideTriangle.A.z, sideTriangle.B.x, sideTriangle.B.y, sideTriangle.B.z, sideTriangle.C.x, sideTriangle.C.y, sideTriangle.C.z);
     }
 }
 
