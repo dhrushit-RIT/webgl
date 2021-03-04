@@ -336,27 +336,34 @@ function makeSphere(slices, stacks) {
     */
 
     for (let phi = 0; phi < Math.PI; phi += dPhi) { // stack level
-        for (let theeta = 0; theeta < Math.PI; theeta += dTheeta) { // in each stack
+        for (let theeta = 0; theeta < 2 * Math.PI; theeta += dTheeta) { // in each stack
             let C = new Point(r * Math.sin(theeta) * Math.cos(phi), r * Math.sin(theeta) * Math.sin(phi), r * Math.cos(theeta));
             let D = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi), r * Math.sin(theeta + dTheeta) * Math.sin(phi), r * Math.cos(theeta + dTheeta));
             let A = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi + dPhi), r * Math.sin(theeta + dTheeta) * Math.sin(phi + dPhi), r * Math.cos(theeta + dTheeta));
             let B = new Point(r * Math.sin(theeta) * Math.cos(phi + dPhi), r * Math.sin(theeta) * Math.sin(phi + dPhi), r * Math.cos(theeta));
-            let side = new MyQuad([A, D, C, B]);
+            let side;
+
+            if (theeta < Math.PI) {
+
+                side = new MyQuad([A, D, C, B]);
+            } else {
+                side = new MyQuad([A, B, C, D]);
+            }
 
             side.generateTriangles();
             side.drawTriangles();
         }
 
-        for (let theeta = Math.PI; theeta < 2 * Math.PI; theeta += dTheeta) {
-            let C = new Point(r * Math.sin(theeta) * Math.cos(phi), r * Math.sin(theeta) * Math.sin(phi), r * Math.cos(theeta));
-            let D = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi), r * Math.sin(theeta + dTheeta) * Math.sin(phi), r * Math.cos(theeta + dTheeta));
-            let A = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi + dPhi), r * Math.sin(theeta + dTheeta) * Math.sin(phi + dPhi), r * Math.cos(theeta + dTheeta));
-            let B = new Point(r * Math.sin(theeta) * Math.cos(phi + dPhi), r * Math.sin(theeta) * Math.sin(phi + dPhi), r * Math.cos(theeta));
-            let side = new MyQuad([A, B, C, D]);
+        // for (let theeta = Math.PI; theeta < 2 * Math.PI; theeta += dTheeta) {
+        //     let C = new Point(r * Math.sin(theeta) * Math.cos(phi), r * Math.sin(theeta) * Math.sin(phi), r * Math.cos(theeta));
+        //     let D = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi), r * Math.sin(theeta + dTheeta) * Math.sin(phi), r * Math.cos(theeta + dTheeta));
+        //     let A = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi + dPhi), r * Math.sin(theeta + dTheeta) * Math.sin(phi + dPhi), r * Math.cos(theeta + dTheeta));
+        //     let B = new Point(r * Math.sin(theeta) * Math.cos(phi + dPhi), r * Math.sin(theeta) * Math.sin(phi + dPhi), r * Math.cos(theeta));
+        //     let side = new MyQuad([A, B, C, D]);
 
-            side.generateTriangles();
-            side.drawTriangles();
-        }
+        //     side.generateTriangles();
+        //     side.drawTriangles();
+        // }
     }
 }
 
