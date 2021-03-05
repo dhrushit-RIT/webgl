@@ -321,11 +321,9 @@ function makeCone(radialdivision, heightdivision) {
             heightdivision - 1
         );
 
-        // sideTriangle.generateTriangles();
         sideTriangle.drawTriangles();
 
         addTriangle(bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z, bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z, bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z);
-        // addTriangle(sideTriangle.A.x, sideTriangle.A.y, sideTriangle.A.z, sideTriangle.B.x, sideTriangle.B.y, sideTriangle.B.z, sideTriangle.C.x, sideTriangle.C.y, sideTriangle.C.z);
     }
 }
 
@@ -369,17 +367,6 @@ function makeSphere(slices, stacks) {
             side.generateTriangles();
             side.drawTriangles();
         }
-
-        // for (let theeta = Math.PI; theeta < 2 * Math.PI; theeta += dTheeta) {
-        //     let C = new Point(r * Math.sin(theeta) * Math.cos(phi), r * Math.sin(theeta) * Math.sin(phi), r * Math.cos(theeta));
-        //     let D = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi), r * Math.sin(theeta + dTheeta) * Math.sin(phi), r * Math.cos(theeta + dTheeta));
-        //     let A = new Point(r * Math.sin(theeta + dTheeta) * Math.cos(phi + dPhi), r * Math.sin(theeta + dTheeta) * Math.sin(phi + dPhi), r * Math.cos(theeta + dTheeta));
-        //     let B = new Point(r * Math.sin(theeta) * Math.cos(phi + dPhi), r * Math.sin(theeta) * Math.sin(phi + dPhi), r * Math.cos(theeta));
-        //     let side = new MyQuad([A, B, C, D]);
-
-        //     side.generateTriangles();
-        //     side.drawTriangles();
-        // }
     }
 }
 
