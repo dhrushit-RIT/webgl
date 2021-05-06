@@ -40,7 +40,8 @@ function setUpCamera(program) {
 
   // set up your projection
   let projMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.perspective(projMatrix, radians(90), 1.0, 0.5, 1000.0);
+  const aspectRatio = gl.canvas.width/ gl.canvas.height;
+  glMatrix.mat4.perspective(projMatrix, radians(90), aspectRatio, 0.5, 1000.0);
   gl.uniformMatrix4fv(program.uProjT, false, projMatrix);
 
   // set up your view
@@ -74,13 +75,13 @@ function setUpTextures() {
   // set texturing parameters
 }
 
-function drawBall(){
+function drawBall() {
 
   gl.useProgram(sphere_program);
 
   let modelMatrix = glMatrix.mat4.create();
   gl.uniformMatrix4fv(sphere_program.uModelT, false, modelMatrix);
-  
+
   drawShape(sphere, sphere_program);
 }
 
