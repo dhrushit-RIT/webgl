@@ -6,7 +6,14 @@ let gl, program;
 
 // Global declarations of objects that you will be drawing
 var myTeapot = null;
-var myTeapot2 = null;
+var sphere = null;
+var cone = null;
+var cylinder = null;
+var cube = null;
+
+var teaPotCylinder = null;
+var teaPotSphere = null;
+var teaPotCone = null;
 
 var angleX = 0;
 var angleY = 0;
@@ -20,11 +27,29 @@ var angleZ = 0;
 //
 function createShapes() {
 
-  // myTeapot = new Teapot();
-  // myTeapot.VAO = bindVAO(myTeapot);
+  myTeapot = new Teapot();
+  myTeapot.VAO = bindVAO(myTeapot);
 
-  myTeapot = new Cylinder(3, 1);
-  myTeapot.VAO = bindVAO (myTeapot);
+  sphere = new Sphere(20, 10);
+  sphere.VAO = bindVAO(sphere);
+
+  cone = new Cone(30, 20);
+  cone.VAO = bindVAO(cone);
+
+  cylinder = new Cylinder(10, 10);
+  cylinder.VAO = bindVAO(cylinder);
+
+  cube = new Cube(4, 4);
+  cube.VAO = bindVAO(cube);
+
+  teaPotCylinder = new Cylinder(10, 2);
+  teaPotSphere = new Cylinder(10, 2);
+  teaPotCone = new Cylinder(10, 2);
+  teaPotCylinder.VAO = bindVAO(teaPotCylinder);
+  teaPotSphere.VAO = bindVAO(teaPotSphere);
+  teaPotCone.VAO = bindVAO(teaPotCone);
+
+
 }
 
 
@@ -36,17 +61,143 @@ function setUpCamera() {
   // set up your projection
   // defualt is orthographic projection
   let projMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.ortho(projMatrix, -5, 5, -5, 5, 1.0, 300.0);
+  glMatrix.mat4.perspective(projMatrix, radians(90), 1.0, 1.0, 300.0);
+  // glMatrix.mat4.ortho(projMatrix, -5, 5, -5, 5, 1.0, 300.0);
   gl.uniformMatrix4fv(program.uProjT, false, projMatrix);
 
 
   // set up your view
   // defaut is at (0,0,-5) looking at the origin
   let viewMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.lookAt(viewMatrix, [0, 0, -2], [0, 0, 0], [0, 1, 0]);
+  glMatrix.mat4.lookAt(viewMatrix, [0, 2, -5], [0, 0, 0], [0, 1, 0]);
   gl.uniformMatrix4fv(program.uViewT, false, viewMatrix);
 }
 
+
+function positionTeaPot() {
+  //
+  // tea pot
+  //
+
+  let modelMatrix = glMatrix.mat4.create();
+  let scaleBy = [0.6, 0.6, 0.6];
+  let translateBy = [0, 0.7, 0];
+
+  modelMatrix = addPillar(modelMatrix);
+
+  addPlates(modelMatrix);
+
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateBy)
+  glMatrix.mat4.rotateY(modelMatrix, modelMatrix, radians(angleY + 180))
+  glMatrix.mat4.scale(modelMatrix, modelMatrix, scaleBy)
+
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  gl.bindVertexArray(myTeapot.VAO);
+  gl.drawElements(gl.TRIANGLES, myTeapot.indices.length, gl.UNSIGNED_SHORT, 0);
+}
+
+function positionSphere() {
+
+  //
+  // sphere
+  //
+  let modelMatrix = glMatrix.mat4.create();
+  let scaleBy = [1, 1, 1];
+  let translateBy = [0, 1.2, 0];
+
+  let translateElements = [3, 0, 0]
+
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateElements)
+  modelMatrix = addPillar(modelMatrix);
+
+  addPlates(modelMatrix);
+
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateBy)
+  glMatrix.mat4.scale(modelMatrix, modelMatrix, scaleBy)
+
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  gl.bindVertexArray(sphere.VAO);
+  gl.drawElements(gl.TRIANGLES, sphere.indices.length, gl.UNSIGNED_SHORT, 0);
+
+}
+
+function addPillar(parentTransformationMatrix) {
+  let modelMatrix = glMatrix.mat4.create();
+  let scaleBy = [1, 1, 1];
+
+  //
+  // stem
+  //
+  glMatrix.mat4.scale(modelMatrix, modelMatrix, scaleBy);
+  glMatrix.mat4.rotateX(modelMatrix, modelMatrix, radians(angleX))
+  glMatrix.mat4.rotateY(modelMatrix, modelMatrix, radians(angleY))
+  glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, radians(angleZ))
+  glMatrix.mat4.multiply(modelMatrix, parentTransformationMatrix, modelMatrix);
+
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  gl.bindVertexArray(cylinder.VAO);
+  gl.drawElements(gl.TRIANGLES, cylinder.indices.length, gl.UNSIGNED_SHORT, 0);
+
+  return modelMatrix;
+}
+
+function addPlateTop(parentTransformationMatrix) {
+  let modelMatrix = glMatrix.mat4.create();
+  let scaleBy = [1.5, 0.2, 1.5];
+  let translateBy = [0, 0.6, 0];
+
+  glMatrix.mat4.multiply(modelMatrix, modelMatrix, parentTransformationMatrix)
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateBy)
+  glMatrix.mat4.scale(modelMatrix, modelMatrix, scaleBy)
+
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  gl.bindVertexArray(cube.VAO);
+  gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
+}
+
+
+function addPlateBot(parentTransformationMatrix) {
+  let modelMatrix = glMatrix.mat4.create();
+  let scaleBy = [1.5, 0.2, 1.5];
+  let translateBy = [0, -0.6, 0];
+
+  glMatrix.mat4.multiply(modelMatrix, modelMatrix, parentTransformationMatrix)
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateBy)
+  glMatrix.mat4.scale(modelMatrix, modelMatrix, scaleBy)
+
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  gl.bindVertexArray(cube.VAO);
+  gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
+}
+
+function addPlates(parentTransformationMatrix) {
+  addPlateTop(parentTransformationMatrix);
+  addPlateBot(parentTransformationMatrix);
+}
+
+function positionCone() {
+  //
+  // cone
+  //
+  let modelMatrix = glMatrix.mat4.create();
+  let scaleBy = [1, 1, 1];
+  let translateBy = [0, 1.2, 0];
+
+  let translateElements = [-3, 0, 0]
+
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateElements)
+  modelMatrix = addPillar(modelMatrix);
+
+  addPlates(modelMatrix);
+
+  glMatrix.mat4.translate(modelMatrix, modelMatrix, translateBy)
+  glMatrix.mat4.scale(modelMatrix, modelMatrix, scaleBy)
+
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  gl.bindVertexArray(cone.VAO);
+  gl.drawElements(gl.TRIANGLES, cone.indices.length, gl.UNSIGNED_SHORT, 0);
+
+}
 
 //
 // Use this function to draw all of your shapes.
@@ -59,17 +210,9 @@ function setUpCamera() {
 function drawShapes() {
 
 
-  let modelMatrix = glMatrix.mat4.create();
-
-  // drawing the teapot rotating around Y  180 degrees
-  glMatrix.mat4.rotateX(modelMatrix, modelMatrix, radians(angleX))
-  glMatrix.mat4.rotateY(modelMatrix, modelMatrix, radians(angleY))
-  glMatrix.mat4.rotateZ(modelMatrix, modelMatrix, radians(angleZ))
-
-  // send the model matrix to the shader and draw.
-  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
-  gl.bindVertexArray(myTeapot.VAO);
-  gl.drawElements(gl.TRIANGLES, myTeapot.indices.length, gl.UNSIGNED_SHORT, 0);
+  positionTeaPot();
+  positionCone();
+  positionSphere();
 
 }
 

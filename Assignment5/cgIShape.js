@@ -1,5 +1,3 @@
-// import "./primitives";
-
 class cgIShape {
     constructor() {
         this.points = [];
@@ -143,8 +141,16 @@ class Cylinder extends cgIShape {
             );
             topTriangles.push(topTriangle);
 
-            this.addTriangle(bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z, bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z, bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z);
-            this.addTriangle(topTriangle.A.x, topTriangle.A.y, topTriangle.A.z, topTriangle.B.x, topTriangle.B.y, topTriangle.B.z, topTriangle.C.x, topTriangle.C.y, topTriangle.C.z);
+            this.addTriangle(
+                bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z,
+                bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z,
+                bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z,
+            );
+            this.addTriangle(
+                topTriangle.A.x, topTriangle.A.y, topTriangle.A.z,
+                topTriangle.B.x, topTriangle.B.y, topTriangle.B.z,
+                topTriangle.C.x, topTriangle.C.y, topTriangle.C.z,
+            );
 
 
             // set up the sides on the curve
@@ -153,29 +159,16 @@ class Cylinder extends cgIShape {
             let C = bottomPoints[(division + 1) % radialdivision];
             let B = topPoints[(division + 1) % radialdivision];
 
-            // let side = new MyQuad([
-            //     topPoints[(division)],
-            //     bottomPoints[(division)],
-            //     bottomPoints[(division + 1) % radialdivision],
-            //     topPoints[(division + 1) % radialdivision]
-            // ], heightdivision);
-
-            // console.log(side.toString());
-
-            // this.addTriangle(topPoints[(division)].x, topPoints[(division)].y, topPoints[(division)].z, bottomPoints[(division)].x, bottomPoints[(division)].y, bottomPoints[(division)].z, bottomPoints[(division + 1) % radialdivision].x, bottomPoints[(division + 1) % radialdivision].y, bottomPoints[(division + 1) % radialdivision].z);
             this.addTriangle(
                 A.x, A.y, A.z,
                 B.x, B.y, B.z,
-                C.x, C.y, C.z
+                C.x, C.y, C.z,
             );
             this.addTriangle(
                 C.x, C.y, C.z,
                 D.x, D.y, D.z,
                 A.x, A.y, A.z,
             );
-            // side.generateTriangles();
-            // side.drawTriangles();
-            console.log();
         }
     }
 }
@@ -231,12 +224,27 @@ class Cone extends cgIShape {
                 heightdivision - 1
             );
 
-            sideTriangle.drawTriangles();
+            //
+            // Sides 
+            //
+            let O = topCenterPoint;
+            let X = bottomPoints[(division)];
+            let Y = bottomPoints[(division + 1) % radialdivision];
+            // sideTriangle.drawTriangles();
+            this.addTriangle(
+                O.x, O.y, O.z,
+                X.x, X.y, X.z,
+                Y.x, Y.y, Y.z
+            )
 
             //
             // base
             //
-            this.addTriangle(bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z, bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z, bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z);
+            this.addTriangle(
+                bottomTriangle.B.x, bottomTriangle.B.y, bottomTriangle.B.z,
+                bottomTriangle.A.x, bottomTriangle.A.y, bottomTriangle.A.z,
+                bottomTriangle.C.x, bottomTriangle.C.y, bottomTriangle.C.z,
+            );
         }
     }
 }
@@ -275,8 +283,20 @@ class Sphere extends cgIShape {
 
                 side = new MyQuad([A, D, C, B]);
 
-                side.generateTriangles();
-                side.drawTriangles();
+                // side.generateTriangles();
+                // side.drawTriangles();
+
+                this.addTriangle(
+                    A.x, A.y, A.z,
+                    D.x, D.y, D.z,
+                    C.x, C.y, C.z,
+                );
+
+                this.addTriangle(
+                    C.x, C.y, C.z,
+                    B.x, B.y, B.z,
+                    A.x, A.y, A.z,
+                );
             }
         }
     }
@@ -306,6 +326,17 @@ class Point {
         return `{${this.x.toFixed(2)}, ${this.y.toFixed(2)}, ${this.z.toFixed(2)}}`
     }
 }
+
+// class Pillar extends cgIShape {
+//     constructor(vertices, subdivisions = 0) {
+//         super();
+//         this.makePillar();
+//     }
+
+//     makePillar() {
+
+//     }
+// }
 
 /* 
 Convention:
