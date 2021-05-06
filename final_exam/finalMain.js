@@ -38,12 +38,12 @@ function setUpCamera(program) {
 
   // set up your projection
   let projMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.perspective(projMatrix, 45, 1.0, 1.0, 1000.0);
+  glMatrix.mat4.perspective(projMatrix, radians(90), 1.0, 0.5, 1000.0);
   gl.uniformMatrix4fv(program.uProjT, false, projMatrix);
 
   // set up your view
   let viewMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.lookAt(viewMatrix, [0, 1.5, 1.5], [0, 0, 0], [0, 1, 0]);
+  glMatrix.mat4.lookAt(viewMatrix, [0.0, 0.0, 6], [0, 0, 0], [0, 1, 0]);
   gl.uniformMatrix4fv(program.uViewT, false, viewMatrix);
 }
 
@@ -72,11 +72,21 @@ function setUpTextures() {
   // set texturing parameters
 }
 
+function drawBall(){
+
+  gl.useProgram(sphere_program);
+
+  let modelMatrix = glMatrix.mat4.create();
+  gl.uniformMatrix4fv(sphere_program.uModelT, false, modelMatrix);
+  
+  drawShape(sphere, sphere_program);
+}
+
 //
 //  This function draws all of the shapes required for your scene
 //
 function drawShapes() {
-  drawShape(sphere, sphere_program);
+  drawBall();
   // drawShape(cube, cube_program);
 }
 
@@ -84,7 +94,7 @@ function drawShape(object, program) {
   gl.useProgram(program);
   gl.bindVertexArray(object.VAO);
   gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT, 0);
-  
+
 }
 
 
@@ -100,6 +110,7 @@ function drawShape(object, program) {
 //
 function initPrograms() {
   sphere_program = initProgram("sphere-V", "sphere-F");
+  setUpCamera(sphere_program);
 }
 
 
@@ -201,6 +212,12 @@ function initProgram(vertex_id, fragment_id) {
 
   program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
 
+
+  // uniforms
+  program.uModelT = gl.getUniformLocation(program, 'modelT');
+  program.uViewT = gl.getUniformLocation(program, 'viewT');
+  program.uProjT = gl.getUniformLocation(program, 'projT');
+
   return program;
 }
 
@@ -266,4 +283,10 @@ function init() {
 
   // do a draw
   draw();
+}
+
+
+function radians(degrees) {
+  var pi = Math.PI;
+  return degrees * (pi / 180);
 }
