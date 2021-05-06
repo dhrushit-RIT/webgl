@@ -1,4 +1,9 @@
 class cgIShape {
+
+    scaleX = 1;
+    scaleY = 1;
+    scaleZ = 1;
+
     constructor () {
         this.points = [];    // 3 floats per vertex
         this.bary = [];      // 3 floats per vertex
