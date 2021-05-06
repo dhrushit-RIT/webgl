@@ -24,6 +24,8 @@ let sphere = null;
 function createShapes() {
   sphere = new Sphere(20, 20);
   sphere.VAO = bindVAO(sphere, sphere_program);
+
+  shapes.push(sphere);
 }
 
 
