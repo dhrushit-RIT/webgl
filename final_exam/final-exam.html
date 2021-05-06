@@ -20,7 +20,8 @@
         
         void main()
         {
-            gl_Position = projT * viewT * modelT * vec4 (aVertexPosition, 1.0);
+            // gl_Position = projT * viewT * modelT * vec4 (aVertexPosition, 1.0);
+            gl_Position = vec4 (aVertexPosition, 1.0);
         }
     </script>
 
