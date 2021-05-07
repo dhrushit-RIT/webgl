@@ -14,6 +14,7 @@ let sphere_program = null;
 let sphere = null;
 
 // textures
+let basketballTexture = null;
 
 // rotation
 
@@ -33,6 +34,38 @@ function setUpCameraForEachProgram() {
   for (let program of programs) {
     setUpCamera(program);
   }
+}
+
+function loadTextures() {
+  basketballTexture = gl.createTexture();
+
+  basketballTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
+
+  // set texturing parameters
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  // load the actual image
+  var texImage = document.getElementById("ball-texture");
+  texImage.crossOrigin = "";
+  texImage.onload = () => {
+
+    // bind the texture so we can perform operations on it
+    gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
+
+    // load the texture data
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texImage.width, texImage.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, texImage);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    draw();
+  }
+
+}
+
+function loadTexture(loadInThis, id) {
+  
 }
 
 //
@@ -55,7 +88,7 @@ function setUpCamera(program) {
 
   // set up your view
   let viewMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.lookAt(viewMatrix, [0.0, 0.0, 5.0], [0, 0, 0], [0, 1, 0]);
+  glMatrix.mat4.lookAt(viewMatrix, [0.0, 0.0, 1.0], [0, 0, 0], [0, 1, 0]);
   gl.uniformMatrix4fv(program.uViewT, false, viewMatrix);
 }
 
@@ -104,6 +137,12 @@ function drawShapes() {
 
 function drawShape(object, program) {
   gl.useProgram(program);
+
+  // add texture
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
+  gl.uniform1i(program.uTheTexture, 0);
+
   gl.bindVertexArray(object.VAO);
   gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT, 0);
 
@@ -183,7 +222,11 @@ function bindVAO(shape, program) {
   gl.vertexAttribPointer(program.aNormal, 3, gl.FLOAT, false, 0, 0);
 
   // add code for any additional vertex attribute
-
+  let uvBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape.uv), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(program.aUV);
+  gl.vertexAttribPointer(program.aUV, 2, gl.FLOAT, false, 0, 0);
 
   // Setting up the IBO
   let myIndexBuffer = gl.createBuffer();
@@ -281,6 +324,11 @@ function initProgram(vertex_id, fragment_id) {
   program.kd = gl.getUniformLocation(program, 'kd');
   program.ks = gl.getUniformLocation(program, 'ks');
   program.ke = gl.getUniformLocation(program, 'ke');
+
+  // textures
+  program.uTheTexture = gl.getUniformLocation(program, 'theTexture');
+  program.aUV = gl.getAttribLocation(program, 'aUV');
+
   return program;
 }
 
@@ -346,6 +394,7 @@ function init() {
 
   setUpCameraForEachProgram();
   setUpPhongForEachProgram();
+  loadTextures();
 
   // do a draw
   draw();

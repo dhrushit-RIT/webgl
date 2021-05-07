@@ -13,11 +13,13 @@
         // Vertex Attributes
         in vec3 aVertexPosition;
         in vec3 aNormal;    // in model coords
+        in vec2 aUV;
 
         // outputs
         out vec3 N;
         out vec3 L;
         out vec3 V;
+        out vec2 theUV;  // pass uv's onto the fragment shader
         
         // Transforms
         uniform mat4 modelT;
@@ -56,6 +58,8 @@
             L = normalize (lcam - vcam);
             V = -normalize (vcam);
 
+            theUV = aUV;
+
             gl_Position = projT * viewT * modelT * vec4 (aVertexPosition, 1.0);
         }
     </script>
@@ -64,25 +68,31 @@
     <script id="sphere-F" type="x-shader/x-fragment">
          #version 300 es
          precision mediump float;
+
+         // calculated by vertex shader and passsed to fragment
+         in vec3 N;
+         in vec3 L;
+         in vec3 V;
          
-        // calculated by vertex shader and passsed to fragment
-        in vec3 N;
-        in vec3 L;
-        in vec3 V;
-
-        // Light parameters
-        uniform vec3 ambientLight;
-        uniform vec3 lightColor;
-
-        // object color parameters
-        uniform vec3 baseColor;
-        uniform vec3 specHighlightColor;
-
-        // Phong parameters
-        uniform float ka;
-        uniform float kd;
-        uniform float ks;
-        uniform float ke;
+         // Light parameters
+         uniform vec3 ambientLight;
+         uniform vec3 lightColor;
+         
+         // object color parameters
+         uniform vec3 baseColor;
+         uniform vec3 specHighlightColor;
+         
+         // Phong parameters
+         uniform float ka;
+         uniform float kd;
+         uniform float ks;
+         uniform float ke;
+         
+         // uvs passed in from vertex shader
+         in vec2 theUV;
+          
+        // the texture to use
+        uniform sampler2D theTexture;
 
 
         // Color that is the result of this shader
@@ -94,11 +104,15 @@
             vec3 R = normalize (reflect (-L, N));
              
             vec3 ambient = ka * ambientLight * baseColor;
+            ambient = ambient * vec3(texture (theTexture, theUV));
             vec3 diffuse = kd * lightColor * baseColor * max (dot(L, N), 0.0);
+            diffuse = diffuse * vec3(texture (theTexture, theUV));
             vec3 spec = ks * specHighlightColor * lightColor * pow (max(dot(R, V), 0.0), ke);
+            spec = spec * vec3(texture (theTexture, theUV));
             
-            //fragColor = vec4 (0.5, 0.5, 0.5, 1.0 );
+            // fragColor = vec4 (0.5, 0.5, 0.5, 1.0 );
             fragColor = vec4 (ambient + diffuse + spec, 1.0);
+            // fragColor = texture (theTexture, theUV);
         }
 
      </script>
@@ -150,7 +164,9 @@
     <script type="text/javascript" src="./event.js"></script>
 
     <!-- texture images -->
-    <!-- <img id="world-texture" src="2_no_clouds_8k.jpg" style="display: none;"> </img> -->
+    <img id="table-texture" src="wood-texture.jpg" style="display: none;"> </img>
+    <img id="ball-texture" src="1_earth_16k.jpg" style="display: none;"> </img>
+    
 
 
     <script type="text/javascript">
