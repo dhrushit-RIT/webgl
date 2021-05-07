@@ -4,6 +4,7 @@
 // across the application
 let gl;
 let shapes = [];
+let programs = [];
 
 // GLSL programs
 let sphere_program = null;
@@ -28,6 +29,11 @@ function createShapes() {
   shapes.push(sphere);
 }
 
+function setUpCameraForEachProgram() {
+  for (let program of programs) {
+    setUpCamera(program);
+  }
+}
 
 //
 // Here you set up your camera position, orientation, and projection
@@ -40,13 +46,16 @@ function setUpCamera(program) {
 
   // set up your projection
   let projMatrix = glMatrix.mat4.create();
-  const aspectRatio = gl.canvas.width/ gl.canvas.height;
-  glMatrix.mat4.perspective(projMatrix, radians(90), aspectRatio, 0.5, 1000.0);
+  const aspectRatio = gl.canvas.width / gl.canvas.height;
+  const fieldOfView = radians(90);
+  const near = 0.5;
+  const far = 1000.0;
+  glMatrix.mat4.perspective(projMatrix, fieldOfView, aspectRatio, near, far);
   gl.uniformMatrix4fv(program.uProjT, false, projMatrix);
 
   // set up your view
   let viewMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.lookAt(viewMatrix, [0.0, 0.0, 6], [0, 0, 0], [0, 1, 0]);
+  glMatrix.mat4.lookAt(viewMatrix, [0.0, 0.0, 5.0], [0, 0, 0], [0, 1, 0]);
   gl.uniformMatrix4fv(program.uViewT, false, viewMatrix);
 }
 
@@ -100,6 +109,39 @@ function drawShape(object, program) {
 
 }
 
+function setUpPhongForEachProgram() {
+  for (let program of programs) {
+    setUpPhong(program);
+  }
+}
+
+function setUpPhong(program) {
+
+
+  // Recall that you must set the program to be current using
+  // the gl useProgram function
+  gl.useProgram(program);
+
+  //
+  // set up the co-efficients
+  //
+  gl.uniform1f(program.ka, 0.2);
+  gl.uniform1f(program.kd, 0.7);
+  gl.uniform1f(program.ks, 0.7);
+  gl.uniform1f(program.ke, 25.0);
+
+  //
+  // set up the light characteristics
+  //
+  gl.uniform3fv(program.lightPosition, glMatrix.vec3.fromValues(2, 2, 2));
+
+  gl.uniform3fv(program.ambientLight, glMatrix.vec3.fromValues(1.0, 0.0, 0.0));
+  gl.uniform3fv(program.lightColor, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+  gl.uniform3fv(program.baseColor, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+  gl.uniform3fv(program.specHighlightColor, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+
+}
+
 
 //
 // Use this function to create all the programs that you need
@@ -113,7 +155,10 @@ function drawShape(object, program) {
 //
 function initPrograms() {
   sphere_program = initProgram("sphere-V", "sphere-F");
-  setUpCamera(sphere_program);
+
+  programs.push(sphere_program);
+  // setUpCamera(sphere_program);
+  // setUpPhong(sphere_program);
 }
 
 
@@ -129,6 +174,13 @@ function bindVAO(shape, program) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape.points), gl.STATIC_DRAW);
   gl.enableVertexAttribArray(program.aVertexPosition);
   gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+
+  // normals
+  let myNormalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, myNormalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shape.normals), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(program.aNormal);
+  gl.vertexAttribPointer(program.aNormal, 3, gl.FLOAT, false, 0, 0);
 
   // add code for any additional vertex attribute
 
@@ -214,13 +266,21 @@ function initProgram(vertex_id, fragment_id) {
   gl.useProgram(program);
 
   program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
-
+  program.aNormal = gl.getAttribLocation(program, 'aNormal');
 
   // uniforms
   program.uModelT = gl.getUniformLocation(program, 'modelT');
   program.uViewT = gl.getUniformLocation(program, 'viewT');
   program.uProjT = gl.getUniformLocation(program, 'projT');
-
+  program.ambientLight = gl.getUniformLocation(program, 'ambientLight');
+  program.lightPosition = gl.getUniformLocation(program, 'lightPosition');
+  program.lightColor = gl.getUniformLocation(program, 'lightColor');
+  program.baseColor = gl.getUniformLocation(program, 'baseColor');
+  program.specHighlightColor = gl.getUniformLocation(program, 'specHighlightColor');
+  program.ka = gl.getUniformLocation(program, 'ka');
+  program.kd = gl.getUniformLocation(program, 'kd');
+  program.ks = gl.getUniformLocation(program, 'ks');
+  program.ke = gl.getUniformLocation(program, 'ke');
   return program;
 }
 
@@ -283,6 +343,9 @@ function init() {
 
   // create and bind your current object
   createShapes();
+
+  setUpCameraForEachProgram();
+  setUpPhongForEachProgram();
 
   // do a draw
   draw();
