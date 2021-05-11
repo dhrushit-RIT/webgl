@@ -118,6 +118,119 @@
      </script>
 
 
+    <!-- Cube/Plank Shaders -->
+    <!-- include vertex shaders -->
+
+    <script id="plank-V" type="x-shader/x-vertex">
+    #version 300 es
+
+    // Vertex Attributes
+    in vec3 aVertexPosition;
+    in vec3 aNormal;    // in model coords
+    in vec2 aUV;
+
+    // outputs
+    out vec3 N;
+    out vec3 L;
+    out vec3 V;
+    out vec2 theUV;  // pass uv's onto the fragment shader
+    
+    // Transforms
+    uniform mat4 modelT;
+    uniform mat4 viewT;
+    uniform mat4 projT;
+
+    // Light parameters
+    uniform vec3 ambientLight;
+    uniform vec3 lightPosition;   // in world coords
+    uniform vec3 lightColor;
+
+    // object color parameters
+    uniform vec3 baseColor;
+    uniform vec3 specHighlightColor;
+
+    // Phong parameters
+    uniform float ka;
+    uniform float kd;
+    uniform float ks;
+    uniform float ke;
+    
+    void main()
+    {
+
+        // All calculations will be done in camera space
+        mat4 modelView = viewT * modelT;
+        mat4 normalmatrix = transpose(inverse (modelView));
+        
+        vec3 vcam = (modelView * vec4(aVertexPosition, 1.0)).xyz;
+        vec3 lcam = (viewT * vec4(lightPosition, 1.0)).xyz;
+        vec3 ncam = (normalmatrix * vec4(aNormal, 1.0)).xyz;
+        ncam = faceforward (ncam, vcam, ncam);
+        
+        // vectors to pass on to Fragment Shader
+        N = normalize (ncam);
+        L = normalize (lcam - vcam);
+        V = -normalize (vcam);
+
+        theUV = aUV;
+
+        gl_Position = projT * viewT * modelT * vec4 (aVertexPosition, 1.0);
+    }
+</script>
+
+    <!-- plank fragment Shaders -->
+    <script id="plank-F" type="x-shader/x-fragment">
+        #version 300 es
+        precision mediump float;
+
+        // calculated by vertex shader and passsed to fragment
+        in vec3 N;
+        in vec3 L;
+        in vec3 V;
+        
+        // Light parameters
+        uniform vec3 ambientLight;
+        uniform vec3 lightColor;
+        
+        // object color parameters
+        uniform vec3 baseColor;
+        uniform vec3 specHighlightColor;
+        
+        // Phong parameters
+        uniform float ka;
+        uniform float kd;
+        uniform float ks;
+        uniform float ke;
+        
+        // uvs passed in from vertex shader
+        in vec2 theUV;
+        
+    // the texture to use
+    uniform sampler2D theTexture;
+
+
+    // Color that is the result of this shader
+    out vec4 fragColor;
+
+    void main(void) {
+
+        // individual components
+        vec3 R = normalize (reflect (-L, N));
+            
+        vec3 ambient = ka * ambientLight * baseColor;
+        ambient = ambient * vec3(texture (theTexture, theUV));
+        vec3 diffuse = kd * lightColor * baseColor * max (dot(L, N), 0.0);
+        diffuse = diffuse * vec3(texture (theTexture, theUV));
+        vec3 spec = ks * specHighlightColor * lightColor * pow (max(dot(R, V), 0.0), ke);
+        spec = spec * vec3(texture (theTexture, theUV));
+        
+        // fragColor = vec4 (0.5, 0.5, 0.5, 1.0 );
+        fragColor = vec4 (ambient + diffuse + spec, 1.0);
+        // fragColor = texture (theTexture, theUV);
+    }
+
+    </script>
+
 
     <!-- include vertex shaders -->
 
@@ -158,7 +271,8 @@
 
     <!-- shape functions -->
     <script type="text/javascript" src="./cgIShape.js"></script>
-    <script type="text/javascript" src="./myShapes-min.js"></script>
+    <script type="text/javascript" src="./myShapes-new.js"></script>
+    <!-- <script type="text/javascript" src="./myShapes-min.js"></script> -->
 
     <!-- keyboard functions -->
     <script type="text/javascript" src="./event.js"></script>
@@ -166,7 +280,7 @@
     <!-- texture images -->
     <img id="table-texture" src="wood-texture.jpg" style="display: none;"> </img>
     <img id="ball-texture" src="1_earth_16k.jpg" style="display: none;"> </img>
-    
+
 
 
     <script type="text/javascript">

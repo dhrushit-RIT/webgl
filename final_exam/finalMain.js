@@ -8,13 +8,15 @@ let programs = [];
 
 // GLSL programs
 let sphere_program = null;
-// let cube_program = null;
+let plank_program = null;
 
 // VAOs for the objects
 let sphere = null;
+let plank = null;
 
 // textures
 let basketballTexture = null;
+let plankTexture = null;
 
 // rotation
 
@@ -24,10 +26,17 @@ let basketballTexture = null;
 // upon the vertex attributes found in each program
 //
 function createShapes() {
+  plank = new Cube(2);
+  plank.VAO = bindVAO(plank, plank_program);
+  plank.scaleBy(20.0, 0.5, 5.0);
+  plank.setPosition(0.0, -2.0, 0.0);
+  
   sphere = new Sphere(20, 20);
   sphere.VAO = bindVAO(sphere, sphere_program);
+  sphere.setPosition(0.0, -0.5, 0.0);
 
   shapes.push(sphere);
+  shapes.push(plank);
 }
 
 function setUpCameraForEachProgram() {
@@ -37,7 +46,6 @@ function setUpCameraForEachProgram() {
 }
 
 function loadTextures() {
-  basketballTexture = gl.createTexture();
 
   basketballTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
@@ -52,7 +60,7 @@ function loadTextures() {
   var texImage = document.getElementById("ball-texture");
   texImage.crossOrigin = "";
   texImage.onload = () => {
-
+    sphere.textureImage = basketballTexture;
     // bind the texture so we can perform operations on it
     gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
 
@@ -62,10 +70,35 @@ function loadTextures() {
     draw();
   }
 
-}
 
-function loadTexture(loadInThis, id) {
-  
+  //
+  // plank texture
+  //
+
+  plankTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, plankTexture);
+
+  // set texturing parameters
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  // load the actual image
+  var plankTexImage = document.getElementById("table-texture");
+  plankTexImage.crossOrigin = "";
+  plankTexImage.onload = () => {
+    plank.textureImage = plankTexture;
+    // bind the texture so we can perform operations on it
+    gl.bindTexture(gl.TEXTURE_2D, plankTexture);
+
+    // load the texture data
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, plankTexImage.width, plankTexImage.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, plankTexImage);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    draw();
+  }
+
+
 }
 
 //
@@ -81,14 +114,21 @@ function setUpCamera(program) {
   let projMatrix = glMatrix.mat4.create();
   const aspectRatio = gl.canvas.width / gl.canvas.height;
   const fieldOfView = radians(90);
-  const near = 0.5;
+  const near = 0;
   const far = 1000.0;
   glMatrix.mat4.perspective(projMatrix, fieldOfView, aspectRatio, near, far);
   gl.uniformMatrix4fv(program.uProjT, false, projMatrix);
 
   // set up your view
+  const sideView = [0.0, 0, 10.0];
+  const closerSideView = [0.0, 0, 5.0];
+  const topView = [0.0, 5.0, 1.0];
+  const eye = [0.0, 2.5, 3.0];
+  // const eye = topView;
+  const center = [0, 0, 0];
+  const up = [0, 1, 0];
   let viewMatrix = glMatrix.mat4.create();
-  glMatrix.mat4.lookAt(viewMatrix, [0.0, 0.0, 1.0], [0, 0, 0], [0, 1, 0]);
+  glMatrix.mat4.lookAt(viewMatrix, eye, center, up);
   gl.uniformMatrix4fv(program.uViewT, false, viewMatrix);
 }
 
@@ -121,16 +161,29 @@ function drawBall() {
 
   gl.useProgram(sphere_program);
 
-  let modelMatrix = glMatrix.mat4.create();
+
+  let modelMatrix = sphere.getModelMatrix();
   gl.uniformMatrix4fv(sphere_program.uModelT, false, modelMatrix);
 
   drawShape(sphere, sphere_program);
+}
+
+function drawPlank() {
+  gl.useProgram(plank_program);
+
+
+  let modelMatrix = plank.getModelMatrix();
+  // let modelMatrix = glMatrix.mat4.create();
+  // glMatrix.mat4.scale(modelMatrix, modelMatrix, [20.0, 1.0, 7.0]);
+  gl.uniformMatrix4fv(plank_program.uModelT, false, modelMatrix);
+  drawShape(plank, plank_program);
 }
 
 //
 //  This function draws all of the shapes required for your scene
 //
 function drawShapes() {
+  drawPlank();
   drawBall();
   // drawShape(cube, cube_program);
 }
@@ -140,7 +193,7 @@ function drawShape(object, program) {
 
   // add texture
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
+  gl.bindTexture(gl.TEXTURE_2D, object.textureImage);
   gl.uniform1i(program.uTheTexture, 0);
 
   gl.bindVertexArray(object.VAO);
@@ -164,8 +217,8 @@ function setUpPhong(program) {
   //
   // set up the co-efficients
   //
-  gl.uniform1f(program.ka, 0.2);
-  gl.uniform1f(program.kd, 0.7);
+  gl.uniform1f(program.ka, 0.4);
+  gl.uniform1f(program.kd, 1.0);
   gl.uniform1f(program.ks, 0.7);
   gl.uniform1f(program.ke, 25.0);
 
@@ -194,8 +247,10 @@ function setUpPhong(program) {
 //
 function initPrograms() {
   sphere_program = initProgram("sphere-V", "sphere-F");
+  plank_program = initProgram("plank-V", "plank-F");
 
   programs.push(sphere_program);
+  programs.push(plank_program);
   // setUpCamera(sphere_program);
   // setUpPhong(sphere_program);
 }
