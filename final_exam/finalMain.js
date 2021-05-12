@@ -28,9 +28,9 @@ let plankTexture = null;
 function createShapes() {
   plank = new Cube(2);
   plank.VAO = bindVAO(plank, plank_program);
-  plank.scaleBy(20.0, 0.5, 5.0);
+  plank.scaleBy(30.0, 0.5, 10.0);
   plank.setPosition(0.0, -2.0, 0.0);
-  
+
   sphere = new Sphere(20, 20);
   sphere.VAO = bindVAO(sphere, sphere_program);
   sphere.setPosition(0.0, -0.5, 0.0);
@@ -120,16 +120,20 @@ function setUpCamera(program) {
   gl.uniformMatrix4fv(program.uProjT, false, projMatrix);
 
   // set up your view
-  const sideView = [0.0, 0, 10.0];
+  const sideView = [0.0, 0.0, 10.0];
   const closerSideView = [0.0, 0, 5.0];
   const topView = [0.0, 5.0, 1.0];
-  const eye = [0.0, 2.5, 3.0];
+  const eye = [0.0, 0.5, 5.0];
+  // const eye = [0.0, 2.5, 8.0];
   // const eye = topView;
   const center = [0, 0, 0];
   const up = [0, 1, 0];
   let viewMatrix = glMatrix.mat4.create();
   glMatrix.mat4.lookAt(viewMatrix, eye, center, up);
   gl.uniformMatrix4fv(program.uViewT, false, viewMatrix);
+
+
+  gl.uniform3fv(program.uCameraPos, eye);
 }
 
 
@@ -201,6 +205,35 @@ function drawShape(object, program) {
 
 }
 
+function setUpSpotlightForEachProgram() {
+  for (let program of programs) {
+    setUpSpotlight(program);
+  }
+}
+
+function setUpSpotlight(program) {
+  gl.useProgram(program);
+  gl.uniform3fv(program.uSpotlightDirection, glMatrix.vec3.fromValues(0.0, -2.0, 0.0));
+  gl.uniform3fv(program.uSpotlightPosition, glMatrix.vec3.fromValues(0.0, 2.0, 0.0));
+  gl.uniform3fv(program.uSpotlightColor, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+  gl.uniform3fv(program.uSpotAmbientLight, glMatrix.vec3.fromValues(0.5, 0.5, 0.5));
+  gl.uniform3fv(program.uSpotDiffuseLight, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+  gl.uniform3fv(program.uSpotSpecLight, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
+
+  gl.uniform1f(program.uLinear, 0.09);
+  gl.uniform1f(program.uQuad, 0.032);
+  gl.uniform1f(program.uConstant, 1.0);
+
+  const cutOff = 0.9955;
+  const outerCutOff = cutOff - 0.02;
+  gl.uniform1f(program.uSpotlightCutoff, cutOff);
+  gl.uniform1f(program.uSpotlightOuterCutoff, outerCutOff);
+
+
+  gl.uniform3fv(program.uNewSpotlightPos, glMatrix.vec3.fromValues(0.0, 10.0, 0.0));
+  gl.uniform3fv(program.uNewSpotlightDir, glMatrix.vec3.fromValues(0.0, -2.0, 0.0));
+}
+
 function setUpPhongForEachProgram() {
   for (let program of programs) {
     setUpPhong(program);
@@ -217,8 +250,8 @@ function setUpPhong(program) {
   //
   // set up the co-efficients
   //
-  gl.uniform1f(program.ka, 0.4);
-  gl.uniform1f(program.kd, 1.0);
+  gl.uniform1f(program.ka, 0.6);
+  gl.uniform1f(program.kd, 0.6);
   gl.uniform1f(program.ks, 0.7);
   gl.uniform1f(program.ke, 25.0);
 
@@ -227,7 +260,7 @@ function setUpPhong(program) {
   //
   gl.uniform3fv(program.lightPosition, glMatrix.vec3.fromValues(2, 2, 2));
 
-  gl.uniform3fv(program.ambientLight, glMatrix.vec3.fromValues(1.0, 0.0, 0.0));
+  gl.uniform3fv(program.ambientLight, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
   gl.uniform3fv(program.lightColor, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
   gl.uniform3fv(program.baseColor, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
   gl.uniform3fv(program.specHighlightColor, glMatrix.vec3.fromValues(1.0, 1.0, 1.0));
@@ -380,9 +413,27 @@ function initProgram(vertex_id, fragment_id) {
   program.ks = gl.getUniformLocation(program, 'ks');
   program.ke = gl.getUniformLocation(program, 'ke');
 
+  //spotlight
+  program.uSpotlightDirection = gl.getUniformLocation(program, 'spotlight.direction');
+  program.uSpotlightPosition = gl.getUniformLocation(program, 'spotlight.position');
+  program.uSpotlightColor = gl.getUniformLocation(program, 'spotlight.color');
+  program.uSpotlightCutoff = gl.getUniformLocation(program, 'spotlight.cutoff');
+  program.uSpotlightOuterCutoff = gl.getUniformLocation(program, 'spotlight.outerCutoff');
+  program.uSpotAmbientLight = gl.getUniformLocation(program, 'spotlight.ambient');
+  program.uSpotDiffuseLight = gl.getUniformLocation(program, 'spotlight.diffuse');
+  program.uSpotSpecLight = gl.getUniformLocation(program, 'spotlight.spec');
+  program.uLinear = gl.getUniformLocation(program, "spotlight.linear");
+  program.uQuad = gl.getUniformLocation(program, "spotlight.quad");
+  program.uConstant = gl.getUniformLocation(program, "spotlight.constant");
+
+  program.uNewSpotlightPos = gl.getUniformLocation(program, 'spotlightPos');
+  program.uNewSpotlightDir = gl.getUniformLocation(program, 'spotlightDir');
+
   // textures
   program.uTheTexture = gl.getUniformLocation(program, 'theTexture');
   program.aUV = gl.getAttribLocation(program, 'aUV');
+
+  program.uCameraPos = gl.getUniformLocation(program, 'cameraPos');
 
   return program;
 }
@@ -449,6 +500,7 @@ function init() {
 
   setUpCameraForEachProgram();
   setUpPhongForEachProgram();
+  setUpSpotlightForEachProgram();
   loadTextures();
 
   // do a draw
