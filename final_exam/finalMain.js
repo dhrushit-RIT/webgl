@@ -279,7 +279,7 @@ function setUpPhong(program) {
 // to program.
 //
 function initPrograms() {
-  sphere_program = initProgram("sphere-V", "sphere-F");
+  sphere_program = initProgram("plank-V", "plank-F");
   plank_program = initProgram("plank-V", "plank-F");
 
   programs.push(sphere_program);
