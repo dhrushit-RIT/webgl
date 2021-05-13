@@ -9,6 +9,7 @@ let programs = [];
 // GLSL programs
 let sphere_program = null;
 let plank_program = null;
+let shadow_program = null;
 
 // VAOs for the objects
 let sphere = null;
@@ -17,6 +18,17 @@ let plank = null;
 // textures
 let basketballTexture = null;
 let plankTexture = null;
+
+
+let shadowMapCube = null;
+let shadowMapFrameBuffer = null;
+let shadowMapRenderBuffer = null;
+let shadowMapViewMatrices = null;
+let shadowClipNearFar = null;
+let camConfigs = null;
+
+// spotlight
+let spotlightPosition = null;
 
 // rotation
 
@@ -112,34 +124,39 @@ function setUpTextures() {
   // set texturing parameters
 }
 
-function drawBall() {
+function drawBall(program) {
 
-  gl.useProgram(sphere_program);
+  gl.useProgram(program);
 
 
   let modelMatrix = sphere.getModelMatrix();
-  gl.uniformMatrix4fv(sphere_program.uModelT, false, modelMatrix);
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
 
-  drawShape(sphere, sphere_program);
+  drawShape(sphere, program);
 }
 
-function drawPlank() {
-  gl.useProgram(plank_program);
+function drawPlank(program) {
+  gl.useProgram(program);
 
 
   let modelMatrix = plank.getModelMatrix();
   // let modelMatrix = glMatrix.mat4.create();
   // glMatrix.mat4.scale(modelMatrix, modelMatrix, [20.0, 1.0, 7.0]);
-  gl.uniformMatrix4fv(plank_program.uModelT, false, modelMatrix);
-  drawShape(plank, plank_program);
+  gl.uniformMatrix4fv(program.uModelT, false, modelMatrix);
+  drawShape(plank, program);
 }
 
 //
 //  This function draws all of the shapes required for your scene
 //
-function drawShapes() {
-  drawPlank();
-  drawBall();
+function drawShapes(program = null) {
+  if (program == null) {
+    drawPlank(plank_program);
+    drawBall(sphere_program);
+  } else {
+    drawPlank(program);
+    drawBall(program);
+  }
   // drawShape(cube, cube_program);
 }
 
@@ -147,9 +164,9 @@ function drawShape(object, program) {
   gl.useProgram(program);
 
   // add texture
-  gl.activeTexture(gl.TEXTURE0);
+  gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, object.texture);
-  gl.uniform1i(program.uTheTexture, 0);
+  gl.uniform1i(program.uTheTexture, 1);
 
   gl.bindVertexArray(object.VAO);
   gl.drawElements(gl.TRIANGLES, object.indices.length, gl.UNSIGNED_SHORT, 0);
@@ -183,6 +200,9 @@ function setUpSpotlight(program) {
 
   gl.uniform3fv(program.uNewSpotlightPos, glMatrix.vec3.fromValues(0.0, 10.0, 0.0));
   gl.uniform3fv(program.uNewSpotlightDir, glMatrix.vec3.fromValues(0.0, -2.0, 0.0));
+
+  // shadow program only
+  gl.uniform3fv(program.pointLightPosition, glMatrix.vec3.fromValues(0.0, 10.0, 0.0));
 }
 
 function setUpPhongForEachProgram() {
@@ -231,14 +251,20 @@ function setUpPhong(program) {
 //
 async function initPrograms() {
 
-  const vertexShaderText = await loadTextResource("./shaders/vs.glsl");
-  const fragmentShaderText = await loadTextResource("./shaders/fs.glsl");
+  const vertexShaderText = await loadTextResource("./shaders/objects.vs.glsl");
+  const fragmentShaderText = await loadTextResource("./shaders/objects.fs.glsl");
 
   sphere_program = initProgramWithShadersText(vertexShaderText, fragmentShaderText);
   plank_program = initProgramWithShadersText(vertexShaderText, fragmentShaderText);
 
+  const shadowVertexShaderText = await loadTextResource("./shaders/shadowMap.vs.glsl");
+  const shadowFragmentShaderText = await loadTextResource("./shaders/shadowMap.fs.glsl");
+
+  shadow_program = initProgramForShadowGen(shadowVertexShaderText, shadowFragmentShaderText);
+
   programs.push(sphere_program);
   programs.push(plank_program);
+  // programs.push();
 }
 
 
@@ -327,6 +353,147 @@ function loadTextResource(url) {
   });
 }
 
+function generateShadowMap() {
+
+  // set gl state status  
+  gl.useProgram(shadow_program);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadowMapCube);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, shadowMapFrameBuffer);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, shadowMapRenderBuffer);
+
+  gl.viewport(0, 0, 1024, 1024);
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+
+  camConfigs = [
+    { lookAt: glMatrix.vec3.fromValues(1, 0, 0), up: glMatrix.vec3.fromValues(0, -1, 0) },
+    { lookAt: glMatrix.vec3.fromValues(-1, 0, 0), up: glMatrix.vec3.fromValues(0, -1, 0) },
+    { lookAt: glMatrix.vec3.fromValues(0, 1, 0), up: glMatrix.vec3.fromValues(0, 0, 1) },
+    { lookAt: glMatrix.vec3.fromValues(0, -1, 0), up: glMatrix.vec3.fromValues(0, 0, -1) },
+    { lookAt: glMatrix.vec3.fromValues(0, 0, 1), up: glMatrix.vec3.fromValues(0, -1, 0) },
+    { lookAt: glMatrix.vec3.fromValues(0, 0, -1), up: glMatrix.vec3.fromValues(0, -1, 0) },
+  ]; // generate 6 of them 
+  shadowMapViewMatrices = [
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+  ];
+
+  var shadowMapProj = glMatrix.mat4.create();
+  shadowClipNearFar = glMatrix.vec2.fromValues(0.05, 15.0);
+  glMatrix.mat4.perspective(shadowMapProj, radians(90), 1.0, shadowClipNearFar[0], shadowClipNearFar[1]);
+
+  // set per frame uniforms
+  gl.uniform2fv(shadow_program.shadowClipNearFar, shadowClipNearFar);
+  gl.uniform3fv(shadow_program.pointLightPosition, glMatrix.vec3.fromValues(0.0, 10.0, 0.0));
+  gl.uniformMatrix4fv(shadow_program.uProjT, false, shadowMapProj);
+
+  const eye = [0.0, 0.5, 5.0];
+  // const eye = [0.0, 2.5, 8.0];
+  // const eye = topView;
+  const center = [0, 0, 0];
+  const up = [0, 1, 0];
+
+  for (var i = 0; i < camConfigs.length; i++) {
+    gl.uniformMatrix4fv(
+      shadow_program.uViewT,
+      gl.FALSE,
+      glMatrix.mat4.lookAt(shadowMapViewMatrices[i], spotlightPosition, camConfigs[i].lookAt, camConfigs[i].up)
+    )
+
+
+    // set framebuffer destination
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
+      shadowMapCube,
+      0
+    );
+
+    gl.framebufferRenderbuffer(
+      gl.FRAMEBUFFER,
+      gl.DEPTH_ATTACHMENT,
+      gl.RENDERBUFFER,
+      shadowMapRenderBuffer
+    );
+
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Draw all objects
+    drawShadow();
+  }
+
+
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+
+}
+
+
+function drawShadow() {
+  // Clear the scene
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  // draw your shapes
+  drawShapes(shadow_program);
+
+  // Clean
+  gl.bindVertexArray(null);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+}
+
+function setUpShadowMapTexture() {
+  shadowMapCube = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadowMapCube);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  for (var i = 0; i < 6; i++) {
+    gl.texImage2D(
+      gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
+      0, gl.RGBA,
+      1024, 1024,
+      0, gl.RGBA,
+      gl.UNSIGNED_BYTE, null
+    );
+  }
+
+  shadowMapFrameBuffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, shadowMapFrameBuffer);
+
+  shadowMapRenderBuffer = gl.createRenderbuffer();
+  gl.bindRenderbuffer(gl.RENDERBUFFER, shadowMapRenderBuffer);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, 1024, 1024);
+
+
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+}
+
+function setUpOtherUniforms(program) {
+  for (program of programs) {
+    // gl.uniform1f(program.uBias, 0.003);
+    gl.uniform2fv(program.shadowClipNearFar, shadowClipNearFar);
+    gl.uniform1i(program.lightShadowMap, 0);
+    gl.activeTexture(gl.TEXTURE0);
+    // gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadowMapCube);
+  }
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -392,6 +559,52 @@ function initProgram(vertex_id, fragment_id) {
     return null;
   }
 
+  // gl.useProgram(program);
+
+  // program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
+  // program.aNormal = gl.getAttribLocation(program, 'aNormal');
+
+  // // uniforms
+  // program.uModelT = gl.getUniformLocation(program, 'modelT');
+  // program.uViewT = gl.getUniformLocation(program, 'viewT');
+  // program.uProjT = gl.getUniformLocation(program, 'projT');
+  // program.ambientLight = gl.getUniformLocation(program, 'ambientLight');
+  // program.lightPosition = gl.getUniformLocation(program, 'lightPosition');
+  // program.lightColor = gl.getUniformLocation(program, 'lightColor');
+  // program.baseColor = gl.getUniformLocation(program, 'baseColor');
+  // program.specHighlightColor = gl.getUniformLocation(program, 'specHighlightColor');
+  // program.ka = gl.getUniformLocation(program, 'ka');
+  // program.kd = gl.getUniformLocation(program, 'kd');
+  // program.ks = gl.getUniformLocation(program, 'ks');
+  // program.ke = gl.getUniformLocation(program, 'ke');
+
+  // //spotlight
+  // program.uSpotlightDirection = gl.getUniformLocation(program, 'spotlight.direction');
+  // program.uSpotlightPosition = gl.getUniformLocation(program, 'spotlight.position');
+  // program.uSpotlightColor = gl.getUniformLocation(program, 'spotlight.color');
+  // program.uSpotlightCutoff = gl.getUniformLocation(program, 'spotlight.cutoff');
+  // program.uSpotlightOuterCutoff = gl.getUniformLocation(program, 'spotlight.outerCutoff');
+  // program.uSpotAmbientLight = gl.getUniformLocation(program, 'spotlight.ambient');
+  // program.uSpotDiffuseLight = gl.getUniformLocation(program, 'spotlight.diffuse');
+  // program.uSpotSpecLight = gl.getUniformLocation(program, 'spotlight.spec');
+  // program.uLinear = gl.getUniformLocation(program, "spotlight.linear");
+  // program.uQuad = gl.getUniformLocation(program, "spotlight.quad");
+  // program.uConstant = gl.getUniformLocation(program, "spotlight.constant");
+
+  // program.uNewSpotlightPos = gl.getUniformLocation(program, 'spotlightPos');
+  // program.uNewSpotlightDir = gl.getUniformLocation(program, 'spotlightDir');
+
+  // // textures
+  // program.uTheTexture = gl.getUniformLocation(program, 'theTexture');
+  // program.aUV = gl.getAttribLocation(program, 'aUV');
+
+  // program.uCameraPos = gl.getUniformLocation(program, 'cameraPos');
+
+  return initProgramForObjects(program);
+}
+
+function initProgramForObjects(program) {
+
   gl.useProgram(program);
 
   program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
@@ -432,6 +645,34 @@ function initProgram(vertex_id, fragment_id) {
   program.aUV = gl.getAttribLocation(program, 'aUV');
 
   program.uCameraPos = gl.getUniformLocation(program, 'cameraPos');
+
+  program.uBias = gl.getUniformLocation(program, 'bias');
+  return program;
+}
+
+function initProgramForShadowGen(vertexShaderText, fragmentShaderText) {
+  const vertexShader = getShaderFromString(vertexShaderText, "vertex");
+  const fragmentShader = getShaderFromString(fragmentShaderText, "fragment");
+
+  // Create a program
+  let program = gl.createProgram();
+
+  // Attach the shaders to this program
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Could not initialize shaders');
+    return null;
+  }
+
+  gl.useProgram(program);
+  program.shadowClipNearFar = gl.getUniformLocation(program, 'shadowClipNearFar');
+  program.pointLightPosition = gl.getUniformLocation(program, 'pointLightPosition');
+  program.uProjT = gl.getUniformLocation(program, 'projT');
+  program.uViewT = gl.getUniformLocation(program, 'viewT');
+  program.uModelT = gl.getUniformLocation(program, 'modelT');
 
   return program;
 }
@@ -453,48 +694,48 @@ function initProgramWithShadersText(vertexShaderText, fragmentShaderText) {
     return null;
   }
 
-  gl.useProgram(program);
+  // gl.useProgram(program);
 
-  program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
-  program.aNormal = gl.getAttribLocation(program, 'aNormal');
+  // program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
+  // program.aNormal = gl.getAttribLocation(program, 'aNormal');
 
-  // uniforms
-  program.uModelT = gl.getUniformLocation(program, 'modelT');
-  program.uViewT = gl.getUniformLocation(program, 'viewT');
-  program.uProjT = gl.getUniformLocation(program, 'projT');
-  program.ambientLight = gl.getUniformLocation(program, 'ambientLight');
-  program.lightPosition = gl.getUniformLocation(program, 'lightPosition');
-  program.lightColor = gl.getUniformLocation(program, 'lightColor');
-  program.baseColor = gl.getUniformLocation(program, 'baseColor');
-  program.specHighlightColor = gl.getUniformLocation(program, 'specHighlightColor');
-  program.ka = gl.getUniformLocation(program, 'ka');
-  program.kd = gl.getUniformLocation(program, 'kd');
-  program.ks = gl.getUniformLocation(program, 'ks');
-  program.ke = gl.getUniformLocation(program, 'ke');
+  // // uniforms
+  // program.uModelT = gl.getUniformLocation(program, 'modelT');
+  // program.uViewT = gl.getUniformLocation(program, 'viewT');
+  // program.uProjT = gl.getUniformLocation(program, 'projT');
+  // program.ambientLight = gl.getUniformLocation(program, 'ambientLight');
+  // program.lightPosition = gl.getUniformLocation(program, 'lightPosition');
+  // program.lightColor = gl.getUniformLocation(program, 'lightColor');
+  // program.baseColor = gl.getUniformLocation(program, 'baseColor');
+  // program.specHighlightColor = gl.getUniformLocation(program, 'specHighlightColor');
+  // program.ka = gl.getUniformLocation(program, 'ka');
+  // program.kd = gl.getUniformLocation(program, 'kd');
+  // program.ks = gl.getUniformLocation(program, 'ks');
+  // program.ke = gl.getUniformLocation(program, 'ke');
 
-  //spotlight
-  program.uSpotlightDirection = gl.getUniformLocation(program, 'spotlight.direction');
-  program.uSpotlightPosition = gl.getUniformLocation(program, 'spotlight.position');
-  program.uSpotlightColor = gl.getUniformLocation(program, 'spotlight.color');
-  program.uSpotlightCutoff = gl.getUniformLocation(program, 'spotlight.cutoff');
-  program.uSpotlightOuterCutoff = gl.getUniformLocation(program, 'spotlight.outerCutoff');
-  program.uSpotAmbientLight = gl.getUniformLocation(program, 'spotlight.ambient');
-  program.uSpotDiffuseLight = gl.getUniformLocation(program, 'spotlight.diffuse');
-  program.uSpotSpecLight = gl.getUniformLocation(program, 'spotlight.spec');
-  program.uLinear = gl.getUniformLocation(program, "spotlight.linear");
-  program.uQuad = gl.getUniformLocation(program, "spotlight.quad");
-  program.uConstant = gl.getUniformLocation(program, "spotlight.constant");
+  // //spotlight
+  // program.uSpotlightDirection = gl.getUniformLocation(program, 'spotlight.direction');
+  // program.uSpotlightPosition = gl.getUniformLocation(program, 'spotlight.position');
+  // program.uSpotlightColor = gl.getUniformLocation(program, 'spotlight.color');
+  // program.uSpotlightCutoff = gl.getUniformLocation(program, 'spotlight.cutoff');
+  // program.uSpotlightOuterCutoff = gl.getUniformLocation(program, 'spotlight.outerCutoff');
+  // program.uSpotAmbientLight = gl.getUniformLocation(program, 'spotlight.ambient');
+  // program.uSpotDiffuseLight = gl.getUniformLocation(program, 'spotlight.diffuse');
+  // program.uSpotSpecLight = gl.getUniformLocation(program, 'spotlight.spec');
+  // program.uLinear = gl.getUniformLocation(program, "spotlight.linear");
+  // program.uQuad = gl.getUniformLocation(program, "spotlight.quad");
+  // program.uConstant = gl.getUniformLocation(program, "spotlight.constant");
 
-  program.uNewSpotlightPos = gl.getUniformLocation(program, 'spotlightPos');
-  program.uNewSpotlightDir = gl.getUniformLocation(program, 'spotlightDir');
+  // program.uNewSpotlightPos = gl.getUniformLocation(program, 'spotlightPos');
+  // program.uNewSpotlightDir = gl.getUniformLocation(program, 'spotlightDir');
 
-  // textures
-  program.uTheTexture = gl.getUniformLocation(program, 'theTexture');
-  program.aUV = gl.getAttribLocation(program, 'aUV');
+  // // textures
+  // program.uTheTexture = gl.getUniformLocation(program, 'theTexture');
+  // program.aUV = gl.getAttribLocation(program, 'aUV');
 
-  program.uCameraPos = gl.getUniformLocation(program, 'cameraPos');
+  // program.uCameraPos = gl.getUniformLocation(program, 'cameraPos');
 
-  return program;
+  return initProgramForObjects(program);
 }
 
 
@@ -503,6 +744,7 @@ function initProgramWithShadersText(vertexShaderText, fragmentShaderText) {
 //
 function draw() {
   // Clear the scene
+  gl.clearColor(0, 0, 0, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -519,6 +761,7 @@ function draw() {
 function init() {
 
   // Retrieve the canvas
+  /** @type {HTMLCanvasElement} */
   const canvas = document.getElementById('webgl-canvas');
   if (!canvas) {
     console.error(`There is no canvas with id ${'webgl-canvas'} on this page.`);
@@ -529,6 +772,7 @@ function init() {
   window.addEventListener('keydown', gotKey, false);
 
   // Retrieve a WebGL context
+  /** @type {WebGLRenderingContext} */
   gl = canvas.getContext('webgl2');
   if (!gl) {
     console.error(`There is no WebGL 2.0 context`);
@@ -552,6 +796,8 @@ function init() {
   gl.depthFunc(gl.LEQUAL)
   gl.clearDepth(1.0)
 
+  spotlightPosition = glMatrix.vec3.fromValues(0.0, 10.0, 0.0);
+
   // loadShaders();
   // Read, compile, and link your shaders
   initPrograms()
@@ -561,12 +807,18 @@ function init() {
       // create and bind your current object
       createShapes();
 
+      setUpShadowMapTexture();
       setUpCameraForEachProgram();
       setUpPhongForEachProgram();
       setUpSpotlightForEachProgram();
+      generateShadowMap();
+      setUpOtherUniforms();
       loadTextures()
         .then(() => {
           // do a draw
+
+          gl.clearColor(0.0, 0.0, 0.0, 1.0)
+
           draw();
         });
     });

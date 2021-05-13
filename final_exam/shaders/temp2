@@ -1,0 +1,85 @@
+function generateShadowMap() {
+
+  // set gl state status  
+  gl.useProgram(shadow_program);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, shadowMapCube);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, shadowMapFrameBuffer);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, shadowMapRenderBuffer);
+
+  gl.viewport(0, 0, 1024, 1024);
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+
+  camConfigs = [
+    { lookAt: glMatrix.vec3.fromValues(1, 0, 0), up: glMatrix.vec3.fromValues(0, -1, 0) },
+    { lookAt: glMatrix.vec3.fromValues(-1, 0, 0), up: glMatrix.vec3.fromValues(0, -1, 0) },
+    { lookAt: glMatrix.vec3.fromValues(0, 1, 0), up: glMatrix.vec3.fromValues(0, 0, 1) },
+    { lookAt: glMatrix.vec3.fromValues(0, -1, 0), up: glMatrix.vec3.fromValues(0, 0, -1) },
+    { lookAt: glMatrix.vec3.fromValues(0, 0, 1), up: glMatrix.vec3.fromValues(0, -1, 0) },
+    { lookAt: glMatrix.vec3.fromValues(0, 0, -1), up: glMatrix.vec3.fromValues(0, -1, 0) },
+  ]; // generate 6 of them 
+  shadowMapViewMatrices = [
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+    glMatrix.mat4.create(),
+  ];
+
+  var shadowMapProj = glMatrix.mat4.create();
+  shadowClipNearFar = glMatrix.vec2.fromValues(0.05, 15.0);
+  glMatrix.mat4.perspective(shadowMapProj, radians(90), 1.0, shadowClipNearFar[0], shadowClipNearFar[1]);
+
+  // set per frame uniforms
+  gl.uniform2fv(
+    shadow_program.shadowClipNearFar,
+    shadowClipNearFar
+  );
+  gl.uniform3fv(
+    shadow_program.pointLightPosition,
+    glMatrix.vec3.fromValues(0.0, 2.0, 0.0)
+  );
+  gl.uniformMatrix4fv(
+    shadow_program.uProjT, 
+    false, 
+    shadowMapProj
+    );
+
+  for (var i = 0; i < camConfigs.length; i++) {
+    gl.uniformMatrix4fv(
+      shadow_program.uViewT,
+      gl.FALSE,
+      glMatrix.mat4.lookAt(shadowMapViewMatrices[i], spotlightPosition, camConfigs[i].lookAt, camConfigs[i].up)
+    )
+
+
+    // set framebuffer destination
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
+      shadowMapCube,
+      0
+    );
+
+    gl.framebufferRenderbuffer(
+      gl.FRAMEBUFFER,
+      gl.DEPTH_ATTACHMENT,
+      gl.RENDERBUFFER,
+      shadowMapRenderBuffer
+    );
+
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Draw all objects
+    drawShadow();
+  }
+
+
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+
+}

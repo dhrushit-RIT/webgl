@@ -1,0 +1,16 @@
+New Element
+- create vertex shader
+- create fragment shader
+- create program variable
+- add entry to initprograms
+- create shape variable
+- add entry to crateShape
+- add entry to 
+
+
+
+
+
+Shadow Map
+- buffer to store shadow Map
+- create depth texture
