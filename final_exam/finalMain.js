@@ -278,14 +278,16 @@ function setUpPhong(program) {
 // based on the in variables to the shaders.   This will vary from program
 // to program.
 //
-function initPrograms() {
-  sphere_program = initProgram("plank-V", "plank-F");
-  plank_program = initProgram("plank-V", "plank-F");
+async function initPrograms() {
+
+  const vertexShaderText = await loadTextResource("./shaders/vs.glsl");
+  const fragmentShaderText = await loadTextResource("./shaders/fs.glsl");
+
+  sphere_program = initProgramWithShadersText(vertexShaderText, fragmentShaderText);
+  plank_program = initProgramWithShadersText(vertexShaderText, fragmentShaderText);
 
   programs.push(sphere_program);
   programs.push(plank_program);
-  // setUpCamera(sphere_program);
-  // setUpPhong(sphere_program);
 }
 
 
@@ -327,6 +329,51 @@ function bindVAO(shape, program) {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
   return theVAO;
+}
+
+function getShaderFromString(shaderText, type) {
+  const shaderString = shaderText.trim();
+
+  // Assign shader depending on the type of shader
+  let shader;
+  if (type === 'vertex') {
+    shader = gl.createShader(gl.VERTEX_SHADER);
+  }
+  else if (type === 'fragment') {
+    shader = gl.createShader(gl.FRAGMENT_SHADER);
+  }
+  else {
+    return null;
+  }
+
+  // Compile the shader using the supplied shader code
+  gl.shaderSource(shader, shaderString);
+  gl.compileShader(shader);
+
+  // Ensure the shader is valid
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    return null;
+  }
+
+  return shader;
+}
+
+function loadTextResource(url) {
+  return new Promise(resolve => {
+
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open('GET', url, false);
+    xmlhttp.onload = function (e) {
+      if (xmlhttp.status < 200 || xmlhttp.status >= 300) {
+        console.error('ERROR loading text resource', url, xmlhttp.status, xmlhttp.statusText);
+      } else {
+        resolve(xmlhttp.responseText);
+        // cb(null, xmlhttp.responseText);
+      }
+    };
+    xmlhttp.send();
+  });
 }
 
 
@@ -438,6 +485,67 @@ function initProgram(vertex_id, fragment_id) {
   return program;
 }
 
+function initProgramWithShadersText(vertexShaderText, fragmentShaderText) {
+  const vertexShader = getShaderFromString(vertexShaderText, "vertex");
+  const fragmentShader = getShaderFromString(fragmentShaderText, "fragment");
+
+  // Create a program
+  let program = gl.createProgram();
+
+  // Attach the shaders to this program
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Could not initialize shaders');
+    return null;
+  }
+
+  gl.useProgram(program);
+
+  program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
+  program.aNormal = gl.getAttribLocation(program, 'aNormal');
+
+  // uniforms
+  program.uModelT = gl.getUniformLocation(program, 'modelT');
+  program.uViewT = gl.getUniformLocation(program, 'viewT');
+  program.uProjT = gl.getUniformLocation(program, 'projT');
+  program.ambientLight = gl.getUniformLocation(program, 'ambientLight');
+  program.lightPosition = gl.getUniformLocation(program, 'lightPosition');
+  program.lightColor = gl.getUniformLocation(program, 'lightColor');
+  program.baseColor = gl.getUniformLocation(program, 'baseColor');
+  program.specHighlightColor = gl.getUniformLocation(program, 'specHighlightColor');
+  program.ka = gl.getUniformLocation(program, 'ka');
+  program.kd = gl.getUniformLocation(program, 'kd');
+  program.ks = gl.getUniformLocation(program, 'ks');
+  program.ke = gl.getUniformLocation(program, 'ke');
+
+  //spotlight
+  program.uSpotlightDirection = gl.getUniformLocation(program, 'spotlight.direction');
+  program.uSpotlightPosition = gl.getUniformLocation(program, 'spotlight.position');
+  program.uSpotlightColor = gl.getUniformLocation(program, 'spotlight.color');
+  program.uSpotlightCutoff = gl.getUniformLocation(program, 'spotlight.cutoff');
+  program.uSpotlightOuterCutoff = gl.getUniformLocation(program, 'spotlight.outerCutoff');
+  program.uSpotAmbientLight = gl.getUniformLocation(program, 'spotlight.ambient');
+  program.uSpotDiffuseLight = gl.getUniformLocation(program, 'spotlight.diffuse');
+  program.uSpotSpecLight = gl.getUniformLocation(program, 'spotlight.spec');
+  program.uLinear = gl.getUniformLocation(program, "spotlight.linear");
+  program.uQuad = gl.getUniformLocation(program, "spotlight.quad");
+  program.uConstant = gl.getUniformLocation(program, "spotlight.constant");
+
+  program.uNewSpotlightPos = gl.getUniformLocation(program, 'spotlightPos');
+  program.uNewSpotlightDir = gl.getUniformLocation(program, 'spotlightDir');
+
+  // textures
+  program.uTheTexture = gl.getUniformLocation(program, 'theTexture');
+  program.aUV = gl.getAttribLocation(program, 'aUV');
+
+  program.uCameraPos = gl.getUniformLocation(program, 'cameraPos');
+
+  return program;
+}
+
 
 //
 // We call draw to render to our canvas
@@ -476,6 +584,7 @@ function init() {
     return null;
   }
 
+
   // deal with keypress
   window.addEventListener('keydown', gotKey, false);
 
@@ -492,19 +601,23 @@ function init() {
   gl.depthFunc(gl.LEQUAL)
   gl.clearDepth(1.0)
 
+  // loadShaders();
   // Read, compile, and link your shaders
-  initPrograms();
+  initPrograms()
+    .then(() => {
 
-  // create and bind your current object
-  createShapes();
 
-  setUpCameraForEachProgram();
-  setUpPhongForEachProgram();
-  setUpSpotlightForEachProgram();
-  loadTextures();
+      // create and bind your current object
+      createShapes();
 
-  // do a draw
-  draw();
+      setUpCameraForEachProgram();
+      setUpPhongForEachProgram();
+      setUpSpotlightForEachProgram();
+      loadTextures();
+
+      // do a draw
+      draw();
+    });
 }
 
 
