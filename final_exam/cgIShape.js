@@ -11,6 +11,7 @@ class cgIShape {
     modelMatrix = null;
 
     textureImage = null;
+    texture = null;
 
     constructor() {
         this.points = [];    // 3 floats per vertex
@@ -111,6 +112,30 @@ class cgIShape {
         this.uv.push(u2);
         this.uv.push(v2);
 
+    }
+
+    loadTexture(path) {
+        return new Promise(resolve => {
+            this.texture = gl.createTexture();
+            // bind the texture so we can perform operations on it
+            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+            // set texturing parameters
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            
+            this.textureImage = document.getElementById(path);
+            this.textureImage.crossOrigin = "";
+            this.textureImage.onload = () => {
+                // gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+                // load the texture data
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.textureImage.width, this.textureImage.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.textureImage);
+                gl.bindTexture(gl.TEXTURE_2D, null);
+                resolve();
+            }
+        });
     }
 }
 

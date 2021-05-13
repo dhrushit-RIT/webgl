@@ -45,59 +45,10 @@ function setUpCameraForEachProgram() {
   }
 }
 
-function loadTextures() {
+async function loadTextures() {
 
-  basketballTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
-
-  // set texturing parameters
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-  // load the actual image
-  var texImage = document.getElementById("ball-texture");
-  texImage.crossOrigin = "";
-  texImage.onload = () => {
-    sphere.textureImage = basketballTexture;
-    // bind the texture so we can perform operations on it
-    gl.bindTexture(gl.TEXTURE_2D, basketballTexture);
-
-    // load the texture data
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texImage.width, texImage.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, texImage);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    draw();
-  }
-
-
-  //
-  // plank texture
-  //
-
-  plankTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, plankTexture);
-
-  // set texturing parameters
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-  // load the actual image
-  var plankTexImage = document.getElementById("table-texture");
-  plankTexImage.crossOrigin = "";
-  plankTexImage.onload = () => {
-    plank.textureImage = plankTexture;
-    // bind the texture so we can perform operations on it
-    gl.bindTexture(gl.TEXTURE_2D, plankTexture);
-
-    // load the texture data
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, plankTexImage.width, plankTexImage.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, plankTexImage);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    draw();
-  }
-
+  await sphere.loadTexture("ball-texture");
+  await plank.loadTexture("table-texture");
 
 }
 
@@ -197,7 +148,7 @@ function drawShape(object, program) {
 
   // add texture
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, object.textureImage);
+  gl.bindTexture(gl.TEXTURE_2D, object.texture);
   gl.uniform1i(program.uTheTexture, 0);
 
   gl.bindVertexArray(object.VAO);
@@ -613,10 +564,11 @@ function init() {
       setUpCameraForEachProgram();
       setUpPhongForEachProgram();
       setUpSpotlightForEachProgram();
-      loadTextures();
-
-      // do a draw
-      draw();
+      loadTextures()
+        .then(() => {
+          // do a draw
+          draw();
+        });
     });
 }
 
