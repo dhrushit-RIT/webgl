@@ -120,7 +120,7 @@ function setUpPhong(program) {
   //
   // set up the co-efficients
   //
-  gl.uniform1f(program.ka, 0.2);
+  gl.uniform1f(program.ka, 0.3);
   gl.uniform1f(program.kd, 0.7);
   gl.uniform1f(program.ks, 0.7);
   gl.uniform1f(program.ke, 25.0);
