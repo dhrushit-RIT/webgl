@@ -1,9 +1,14 @@
 <html>
+
 <head>
-    <title>CSCI-510: Assn 6 - Materials and Shading</title>
-    
+    <title>Materials and Shading</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
     <!-- vertex Shader -->
-    <script id="phong-per-vertex-V"  type="x-shader/x-vertex">
+    <script id="phong-per-vertex-V" type="x-shader/x-vertex">
     #version 300 es
     precision mediump float;
     // Vertex shader for phong illumination model
@@ -68,7 +73,7 @@
 
     </script>
 
-    <script id="phong-per-fragment-V"  type="x-shader/x-vertex">
+    <script id="phong-per-fragment-V" type="x-shader/x-vertex">
     #version 300 es
     precision mediump float;
     // Vertex shader for phong illumination model
@@ -125,8 +130,8 @@
 
     </script>
 
-     <!-- fragment Shader -->
-     <script id="phong-per-fragment-F" type="x-shader/x-fragment">
+    <!-- fragment Shader -->
+    <script id="phong-per-fragment-F" type="x-shader/x-fragment">
          #version 300 es
 
          // Fragment shader for phong illumination model
@@ -170,8 +175,8 @@
          }
 
     </script>
-     
-     <script id="phong-per-vertex-F" type="x-shader/x-fragment">
+
+    <script id="phong-per-vertex-F" type="x-shader/x-fragment">
           #version 300 es
 
           // Fragment shader for phong illumination model
@@ -191,78 +196,126 @@
           }
 
      </script>
-     
-     <!-- Matrix library and code for standard transformations -->
-     <script type="text/javascript" src="gl-matrix-min.js"></script>
-     
-     <!-- include the shape creation functions -->
+
+    <!-- Matrix library and code for standard transformations -->
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+
+    <!-- include the shape creation functions -->
     <script type="text/javascript" src="./cgIShape.js"></script>
-    
+
     <!-- definition of standard shapes -->
     <script type="text/javascript" src="./myShapes-min.js"></script>
-    
+
     <!-- include the main tesselation functions -->
     <script type="text/javascript" src="./shadeMain.js"></script>
-    
+
     <!-- keyboard functions -->
     <script type="text/javascript">
-    
-    function gotKey (event) {
-        
-        var key = event.key;
-        
-        //  incremental rotation
-        if (key == 'v') {
-            nowShowing = 'Vertex';
-            draw();
+
+        function gotKey(event) {
+
+            var key = event.key;
+
+            //  incremental rotation
+            if (key == 'v') {
+                nowShowing = 'Vertex';
+                draw();
+            }
+
+            if (key == 'f') {
+                nowShowing = 'Fragment';
+                draw();
+            }
+
         }
-        
-        if (key == 'f') {
-            nowShowing = 'Fragment';
-            draw();
-        }
-        
-    }
-    
+
     </script>
 
-  <script type="text/javascript">
-    // Call init once the webpage has loaded
-    window.onload = init;
-  </script>
+    <script type="text/javascript">
+        // Call init once the webpage has loaded
+        window.onload = init;
+    </script>
 </head>
 
 <body>
-  <h1>CSCI-510: Assn 6 - Materials and Shading</h1>
-  <table>
-      <tr>
-          <td><canvas id="webgl-canvas" width="500" height="500">
-            Your browser does not support the HTML5 canvas element.
-          </canvas></td>
-          
-          <td>
-              <h3>Controls</h3>
-              
-              <table border="1">
-              <tbody>
-            
-              <tr>
-              <td>v</td>
-              <td>Render using per-vertex shaders</td>
-              </tr>
-              <tr>
-              <td>f</td>
-              <td>Render using per-fragment shaders</td>
-              </tr>
-              </tbody>
-              </table>
-              
-          </td>
-      </tr>
-  </table>
-  
-  
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="./index.html">DSR</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page"
+                            href="https://dhrushit-rit.github.io/home/index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="https://dhrushit-rit.github.io/home/college.html">College</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://dhrushit-rit.github.io/home/resume.html">Resume</a>
+                    </li>
+                    <!-- <li class="nav-item dropdown">
+                        <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            id="navbarDropdownMenuLink"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            Dropdown link
+                        </a>
+                        <ul
+                            class="dropdown-menu"
+                            aria-labelledby="navbarDropdownMenuLink"
+                        >
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li>
+                                <a class="dropdown-item" href="#">Something else here</a>
+                            </li>
+                        </ul>
+                    </li> -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+
+        <h1>Materials and Shading</h1>
+        <table>
+            <tr>
+                <td><canvas id="webgl-canvas" width="500" height="500">
+                        Your browser does not support the HTML5 canvas element.
+                    </canvas></td>
+
+                <td>
+                    <h3>Controls</h3>
+
+                    <table border="1">
+                        <tbody>
+
+                            <tr>
+                                <td>v</td>
+                                <td>Render using per-vertex shaders</td>
+                            </tr>
+                            <tr>
+                                <td>f</td>
+                                <td>Render using per-fragment shaders</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
 
 </body>
-</html>
 
+</html>

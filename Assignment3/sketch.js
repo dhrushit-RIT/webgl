@@ -185,7 +185,8 @@ var scene = 1;
 var backgroundColor;
 
 function setup() {
-  createCanvas(500, 500);
+  let cnv = createCanvas(500, 500);
+  cnv.parent('cnv');
   backgroundColor = color(150, 150, 150);
   background(backgroundColor);
 }
