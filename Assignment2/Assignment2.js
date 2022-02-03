@@ -511,7 +511,9 @@ let doMine = true;
 let scene = 1;
 
 function setup() {
-    createCanvas(canvasHeight, canvasWeight);
+    let cnv = createCanvas(canvasHeight, canvasWeight);
+    
+    cnv.parent('cnv');
     backgroundColor = color(150, 150, 150);
     background(backgroundColor);
 }
