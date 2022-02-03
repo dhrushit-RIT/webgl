@@ -93,7 +93,8 @@ doTri = false;
 
 function setup() {
   backgroundColor = color(150, 150, 150);
-  createCanvas(500, 500);
+  cnv = createCanvas(500, 500);
+  cnv.parent('cnv');
   background(backgroundColor);
   // strokeWeight(10);
 }
